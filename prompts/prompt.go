@@ -2,57 +2,118 @@ package prompts
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
-
-	"github.com/GrantFBarnes/go-cli/ansi"
 )
 
-// Prompt with message, return typed response.
-func Text(message string) (string, error) {
-	return prompt(message, false)
+type Confirm struct {
+	message   string
+	defaultNo bool
 }
 
-// Prompt with message, return typed response. Input does not display in plain text.
-func Secret(message string) (string, error) {
-	return prompt(message, true)
+// NewConfirm returns a new Confirm object
+func NewConfirm(message string) *Confirm {
+	return &Confirm{
+		message:   message,
+		defaultNo: false,
+	}
 }
 
-// Confirm yes/no. Returns boolean true==YES, false==NO. Default YES.
-func Confirm(message string) (bool, error) {
-	fmt.Print(message)
-	fmt.Print("[Y/n]")
+// MessageDefaultNo sets the default of a Confirmation prompt to no
+func (c *Confirm) MessageDefaultNo() *Confirm {
+	c.defaultNo = true
+	return c
+}
+
+// MessageRun will prompt the user with the Confirmation prompt
+func (c *Confirm) MessageRun() (bool, error) {
+	fmt.Print(c.message)
+	if c.defaultNo {
+		fmt.Print("[y/N]")
+	} else {
+		fmt.Print("[Y/n]")
+	}
 
 	reader := bufio.NewReader(os.Stdin)
 	result, err := reader.ReadByte()
 	if err != nil {
 		return false, err
 	}
-	isNotN := result != 110 && result != 78
-	return isNotN, nil
+
+	switch result {
+	// Y
+	case 121, 89:
+		return true, nil
+	// N
+	case 110, 78:
+		return false, nil
+	}
+
+	return !c.defaultNo, nil
 }
 
-func prompt(message string, hideInput bool) (string, error) {
-	fmt.Print(message)
+type Text struct {
+	message  string
+	confirm  bool
+	secret   bool
+	required bool
+}
 
-	var result []rune
+// NewText returns a new Text object
+func NewText(message string) *Text {
+	return &Text{
+		message:  message,
+		confirm:  false,
+		secret:   false,
+		required: false,
+	}
+}
+
+// TextConfirm sets Text prompt to confirm input
+func (t *Text) TextConfirm() *Text {
+	t.confirm = true
+	return t
+}
+
+// TextSecret sets Text prompt to hide input
+func (t *Text) TextSecret() *Text {
+	t.secret = true
+	return t
+}
+
+// TextRequired sets Text prompt to require input
+func (t *Text) TextRequired() *Text {
+	t.required = true
+	return t
+}
+
+// TextRun will prompt the user with the Text prompt
+func (t *Text) TextRun() (string, error) {
+	fmt.Print(t.message)
 	reader := bufio.NewReader(os.Stdin)
-	for {
-		char, _, err := reader.ReadRune()
+	result, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	result = result[:len(result)-1]
+
+	if t.confirm {
+		fmt.Print("Again:")
+		confirm, err := reader.ReadString('\n')
+		confirm = confirm[:len(confirm)-1]
 		if err != nil {
 			return "", err
 		}
 
-		if char == 10 { // enter
-			break
-		}
-
-		result = append(result, char)
-
-		if hideInput {
-			ansi.CursorBack()
-			fmt.Print("*")
+		if result != confirm {
+			return "", errors.New("confirmation doesn't match")
 		}
 	}
+
+	if t.required && len(result) == 0 {
+		return "", errors.New("input is required")
+	}
+
 	return string(result), nil
 }
