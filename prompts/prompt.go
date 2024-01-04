@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
+	"github.com/GrantFBarnes/go-cli/ansi"
 )
 
 type Confirm struct {
@@ -97,6 +99,10 @@ func (t *Text) TextRun() (string, error) {
 		return "", err
 	}
 	result = result[:len(result)-1]
+	if t.secret {
+		ansi.CursorPreviousLine()
+		ansi.EraseLine()
+	}
 
 	if t.confirm {
 		fmt.Print("Again:")
@@ -104,6 +110,11 @@ func (t *Text) TextRun() (string, error) {
 		confirm = confirm[:len(confirm)-1]
 		if err != nil {
 			return "", err
+		}
+
+		if t.secret {
+			ansi.CursorPreviousLine()
+			ansi.EraseLine()
 		}
 
 		if result != confirm {
