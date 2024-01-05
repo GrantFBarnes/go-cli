@@ -13,7 +13,7 @@ func TestSelect(t *testing.T) {
 	message = ""
 	options = []string{}
 	descriptions = []string{}
-	_, err = Select(message, options, descriptions)
+	_, _, err = NewSelect().SelectTitle(message).SelectOptions(options).SelectDetails(descriptions).SelectRun()
 	if err == nil {
 		t.Fatalf("TestSelect(\"%v\",%v,%v): should have failed because of empty options", message, options, descriptions)
 	}
@@ -28,7 +28,7 @@ func TestMultiSelect(t *testing.T) {
 	message = ""
 	options = []string{}
 	descriptions = []string{}
-	_, err = MultiSelect(message, options, descriptions)
+	_, _, err = NewSelect().SelectTitle(message).SelectOptions(options).SelectDetails(descriptions).SelectMultiRun()
 	if err == nil {
 		t.Fatalf("TestMultiSelect(\"%v\",%v,%v): should have failed because of empty options", message, options, descriptions)
 	}
